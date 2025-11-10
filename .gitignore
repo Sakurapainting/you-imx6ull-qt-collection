@@ -1,0 +1,31 @@
+!*/
+
+# Qt build folders (通常以build-开头)
+build-*/
+*-build-*/
+
+# Qt generated files
+*.o
+*.obj
+*.so
+*.a
+*.lib
+*.dll
+*.exe
+*.app
+moc_*.cpp
+moc_*.h
+qrc_*.cpp
+ui_*.h
+Makefile*
+.qmake.stash
+
+# Qt Creator user settings
+*.pro.user
+*.pro.user.*
+
+# Debug and Release folders
+debug/
+release/
+Debug/
+Release/

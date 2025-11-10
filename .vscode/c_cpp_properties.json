@@ -1,0 +1,37 @@
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "/opt/Qt5.12.9/5.12.9/gcc_64/include",
+                "/opt/Qt5.12.9/5.12.9/gcc_64/include/QtCore",
+                "/opt/Qt5.12.9/5.12.9/gcc_64/include/QtGui",
+                "/opt/Qt5.12.9/5.12.9/gcc_64/include/QtWidgets",
+                "/opt/Qt5.12.9/5.12.9/gcc_64/include/QtNetwork",
+                "/opt/Qt5.12.9/5.12.9/gcc_64/include/QtSql",
+                "/opt/Qt5.12.9/5.12.9/gcc_64/include/QtXml",
+                "/usr/include/c++/**",
+                "/usr/include",
+                "/usr/local/include"
+            ],
+            "defines": [
+                "QT_CORE_LIB",
+                "QT_GUI_LIB",
+                "QT_WIDGETS_LIB"
+            ],
+            "compilerPath": "/usr/bin/g++",
+            "cStandard": "c11",
+            "cppStandard": "c++11",
+            "intelliSenseMode": "linux-gcc-x64",
+            "browse": {
+                "path": [
+                    "${workspaceFolder}",
+                    "/opt/Qt5.12.9/5.12.9/gcc_64/include"
+                ],
+                "limitSymbolsToIncludedHeaders": true
+            }
+        }
+    ],
+    "version": 4
+}

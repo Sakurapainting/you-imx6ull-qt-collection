@@ -1,0 +1,18 @@
+{
+    "C_Cpp.default.includePath": [
+        "${workspaceFolder}/**",
+        "/opt/Qt5.12.9/5.12.9/gcc_64/include/**"
+    ],
+    "C_Cpp.default.compilerPath": "/usr/bin/g++",
+    "C_Cpp.default.cppStandard": "c++11",
+    "C_Cpp.default.intelliSenseMode": "linux-gcc-x64",
+    "C_Cpp.errorSquiggles": "enabled",
+    "files.associations": {
+        "*.ui": "xml",
+        "qstring": "cpp",
+        "qobject": "cpp",
+        "qwidget": "cpp",
+        "qmainwindow": "cpp",
+        "qpushbutton": "cpp"
+    }
+}
