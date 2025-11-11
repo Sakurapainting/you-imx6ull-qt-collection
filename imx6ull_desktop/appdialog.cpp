@@ -7,6 +7,7 @@
 #include <QTextStream>
 #include <QMessageBox>
 #include <QFrame>
+#include <QScrollArea>
 
 AppDialog::AppDialog(const QString &appName, QWidget *parent)
     : QDialog(parent)
@@ -577,7 +578,134 @@ QString AppDialog::readFileContent(const QString &filePath)
 
 void AppDialog::createNetworkApp()
 {
-    m_contentLabel->setText("网络设置\n\nIP 地址：192.168.1.100\n子网掩码：255.255.255.0\n网关：192.168.1.1");
+    m_contentLabel->setText("网络信息");
+    m_contentLabel->setStyleSheet("font-size: 18px; color: #333; font-weight: bold;");
+    
+    QVBoxLayout *layout = qobject_cast<QVBoxLayout*>(m_contentLabel->parentWidget()->layout());
+    if (layout) {
+        // 创建滚动区域以防止内容过多
+        QScrollArea *scrollArea = new QScrollArea(this);
+        scrollArea->setWidgetResizable(true);
+        scrollArea->setFrameShape(QFrame::NoFrame);
+        scrollArea->setStyleSheet("QScrollArea { background-color: #f5f5f5; }");
+        
+        QWidget *contentWidget = new QWidget();
+        contentWidget->setStyleSheet("background-color: #f5f5f5;");
+        QVBoxLayout *contentLayout = new QVBoxLayout(contentWidget);
+        contentLayout->setContentsMargins(15, 15, 15, 15);
+        contentLayout->setSpacing(10);
+        
+        // 获取所有网络接口
+        QList<QNetworkInterface> interfaces = QNetworkInterface::allInterfaces();
+        
+        for (const QNetworkInterface &interface : interfaces) {
+            // 跳过回环接口
+            if (interface.flags() & QNetworkInterface::IsLoopBack)
+                continue;
+            
+            // 跳过未激活的接口
+            if (!(interface.flags() & QNetworkInterface::IsUp))
+                continue;
+            
+            // 创建接口信息卡片
+            QFrame *ifaceFrame = new QFrame(this);
+            ifaceFrame->setStyleSheet("background-color: white; border-radius: 8px;");
+            QVBoxLayout *ifaceLayout = new QVBoxLayout(ifaceFrame);
+            ifaceLayout->setContentsMargins(15, 15, 15, 15);
+            ifaceLayout->setSpacing(8);
+            
+            // 接口名称
+            QLabel *nameLabel = new QLabel(QString("<b>接口: %1</b>").arg(interface.name()), this);
+            nameLabel->setStyleSheet("font-size: 16px; color: #2196F3;");
+            ifaceLayout->addWidget(nameLabel);
+            
+            // MAC 地址
+            QString mac = interface.hardwareAddress();
+            if (!mac.isEmpty()) {
+                QLabel *macLabel = new QLabel(QString("MAC 地址: %1").arg(mac), this);
+                macLabel->setStyleSheet("font-size: 13px; color: #666;");
+                ifaceLayout->addWidget(macLabel);
+            }
+            
+            // 获取所有IP地址
+            QList<QNetworkAddressEntry> entries = interface.addressEntries();
+            for (const QNetworkAddressEntry &entry : entries) {
+                QHostAddress ip = entry.ip();
+                
+                // 只显示 IPv4 地址
+                if (ip.protocol() == QAbstractSocket::IPv4Protocol) {
+                    QLabel *ipLabel = new QLabel(QString("IP 地址: <b>%1</b>").arg(ip.toString()), this);
+                    ipLabel->setStyleSheet("font-size: 14px; color: #4CAF50;");
+                    ifaceLayout->addWidget(ipLabel);
+                    
+                    QLabel *netmaskLabel = new QLabel(QString("子网掩码: %1").arg(entry.netmask().toString()), this);
+                    netmaskLabel->setStyleSheet("font-size: 13px; color: #666;");
+                    ifaceLayout->addWidget(netmaskLabel);
+                    
+                    QLabel *broadcastLabel = new QLabel(QString("广播地址: %1").arg(entry.broadcast().toString()), this);
+                    broadcastLabel->setStyleSheet("font-size: 13px; color: #666;");
+                    ifaceLayout->addWidget(broadcastLabel);
+                }
+            }
+            
+            // 接口状态
+            QStringList flags;
+            if (interface.flags() & QNetworkInterface::IsUp) flags << "运行中";
+            if (interface.flags() & QNetworkInterface::IsRunning) flags << "激活";
+            if (interface.flags() & QNetworkInterface::CanBroadcast) flags << "支持广播";
+            if (interface.flags() & QNetworkInterface::CanMulticast) flags << "支持组播";
+            
+            if (!flags.isEmpty()) {
+                QLabel *statusLabel = new QLabel(QString("状态: %1").arg(flags.join(", ")), this);
+                statusLabel->setStyleSheet("font-size: 12px; color: #999;");
+                ifaceLayout->addWidget(statusLabel);
+            }
+            
+            contentLayout->addWidget(ifaceFrame);
+        }
+        
+        // 如果没有找到有效的网络接口
+        if (contentLayout->count() == 0) {
+            QLabel *noNetLabel = new QLabel("未找到活动的网络接口", this);
+            noNetLabel->setAlignment(Qt::AlignCenter);
+            noNetLabel->setStyleSheet("font-size: 16px; color: #999; padding: 30px;");
+            contentLayout->addWidget(noNetLabel);
+        }
+        
+        contentLayout->addStretch();
+        
+        scrollArea->setWidget(contentWidget);
+        layout->addWidget(scrollArea);
+    }
+}
+
+QString AppDialog::getNetworkInfo()
+{
+    QString info;
+    QList<QNetworkInterface> interfaces = QNetworkInterface::allInterfaces();
+    
+    for (const QNetworkInterface &interface : interfaces) {
+        if (interface.flags() & QNetworkInterface::IsLoopBack)
+            continue;
+            
+        if (!(interface.flags() & QNetworkInterface::IsUp))
+            continue;
+        
+        info += QString("接口: %1\n").arg(interface.name());
+        info += QString("MAC: %1\n").arg(interface.hardwareAddress());
+        
+        QList<QNetworkAddressEntry> entries = interface.addressEntries();
+        for (const QNetworkAddressEntry &entry : entries) {
+            if (entry.ip().protocol() == QAbstractSocket::IPv4Protocol) {
+                info += QString("IP: %1\n").arg(entry.ip().toString());
+                info += QString("子网掩码: %1\n").arg(entry.netmask().toString());
+                info += QString("广播: %1\n").arg(entry.broadcast().toString());
+            }
+        }
+        info += "\n";
+    }
+    
+    return info;
 }
 
 void AppDialog::createSettingsApp()
