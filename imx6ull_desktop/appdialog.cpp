@@ -2,6 +2,9 @@
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QDebug>
+#include <QFile>
+#include <QTextStream>
+#include <QMessageBox>
 
 AppDialog::AppDialog(const QString &appName, QWidget *parent)
     : QDialog(parent)
@@ -95,17 +98,60 @@ void AppDialog::setupUI(const QString &appName)
 
 void AppDialog::createLEDApp()
 {
-    m_contentLabel->setText("LED 控制应用\n\n这里可以控制板载 LED 灯的开关和亮度");
+    // 首先关闭心跳灯
+    system("echo none > /sys/class/leds/red/trigger");
     
-    // 可以添加更多的 LED 控制按钮和滑块
+    m_contentLabel->setText("LED 控制应用\n\n控制板载 RED LED 灯的开关");
+    
     QVBoxLayout *layout = qobject_cast<QVBoxLayout*>(m_contentLabel->parentWidget()->layout());
     if (layout) {
+        // 创建状态显示标签
+        QLabel *statusLabel = new QLabel("LED 状态: --", this);
+        statusLabel->setAlignment(Qt::AlignCenter);
+        statusLabel->setStyleSheet("font-size: 16px; color: #333; padding: 10px;");
+        
+        // 创建控制按钮
         QPushButton *ledOnBtn = new QPushButton("打开 LED", this);
         QPushButton *ledOffBtn = new QPushButton("关闭 LED", this);
         
         ledOnBtn->setStyleSheet("QPushButton { padding: 15px; font-size: 16px; background-color: #4CAF50; color: white; border: none; border-radius: 5px; }");
         ledOffBtn->setStyleSheet("QPushButton { padding: 15px; font-size: 16px; background-color: #f44336; color: white; border: none; border-radius: 5px; }");
         
+        // 连接按钮信号
+        connect(ledOnBtn, &QPushButton::clicked, this, [statusLabel]() {
+            QFile file("/sys/devices/platform/dtsleds/leds/red/brightness");
+            if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+                QTextStream out(&file);
+                out << "1";
+                file.close();
+                statusLabel->setText("LED 状态: 开启");
+                statusLabel->setStyleSheet("font-size: 16px; color: #4CAF50; padding: 10px; font-weight: bold;");
+                qDebug() << "LED turned ON";
+            } else {
+                statusLabel->setText("LED 状态: 操作失败");
+                statusLabel->setStyleSheet("font-size: 16px; color: #f44336; padding: 10px;");
+                qDebug() << "Failed to open LED device for writing";
+            }
+        });
+        
+        connect(ledOffBtn, &QPushButton::clicked, this, [statusLabel]() {
+            QFile file("/sys/devices/platform/dtsleds/leds/red/brightness");
+            if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+                QTextStream out(&file);
+                out << "0";
+                file.close();
+                statusLabel->setText("LED 状态: 关闭");
+                statusLabel->setStyleSheet("font-size: 16px; color: #666; padding: 10px;");
+                qDebug() << "LED turned OFF";
+            } else {
+                statusLabel->setText("LED 状态: 操作失败");
+                statusLabel->setStyleSheet("font-size: 16px; color: #f44336; padding: 10px;");
+                qDebug() << "Failed to open LED device for writing";
+            }
+        });
+        
+        layout->addWidget(statusLabel);
+        layout->addSpacing(20);
         layout->addWidget(ledOnBtn);
         layout->addWidget(ledOffBtn);
         layout->addStretch();
