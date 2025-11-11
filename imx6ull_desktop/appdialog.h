@@ -11,6 +11,7 @@
 #include <QStackedWidget>
 #include <QVector>
 #include <QDateTime>
+#include <QNetworkInterface>
 
 QT_CHARTS_USE_NAMESPACE
 
@@ -45,6 +46,9 @@ private:
     // 传感器图表相关
     void setupSensorChart();
     void updateChartData(int rawValue);
+    
+    // 网络信息相关
+    QString getNetworkInfo();
 
 private:
     QString m_appName;
