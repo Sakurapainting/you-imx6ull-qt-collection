@@ -1,14 +1,20 @@
 #include "appdialog.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
+#include <QGridLayout>
 #include <QDebug>
 #include <QFile>
 #include <QTextStream>
 #include <QMessageBox>
+#include <QFrame>
 
 AppDialog::AppDialog(const QString &appName, QWidget *parent)
     : QDialog(parent)
     , m_appName(appName)
+    , m_sensorTimer(nullptr)
+    , m_adcRawLabel(nullptr)
+    , m_adcVoltageLabel(nullptr)
+    , m_adcScaleLabel(nullptr)
 {
     setupUI(appName);
     
@@ -34,6 +40,9 @@ AppDialog::AppDialog(const QString &appName, QWidget *parent)
 
 AppDialog::~AppDialog()
 {
+    if (m_sensorTimer) {
+        m_sensorTimer->stop();
+    }
 }
 
 void AppDialog::setupUI(const QString &appName)
@@ -160,7 +169,131 @@ void AppDialog::createLEDApp()
 
 void AppDialog::createSensorApp()
 {
-    m_contentLabel->setText("传感器数据监控\n\n温度：-- °C\n湿度：-- %\n光照：-- lux");
+    m_contentLabel->setText("ADC 传感器数据监控");
+    m_contentLabel->setStyleSheet("font-size: 18px; color: #333; font-weight: bold;");
+    
+    QVBoxLayout *layout = qobject_cast<QVBoxLayout*>(m_contentLabel->parentWidget()->layout());
+    if (layout) {
+        // 创建数据显示区域
+        QWidget *dataWidget = new QWidget(this);
+        dataWidget->setStyleSheet("background-color: #f5f5f5; border-radius: 10px;");
+        
+        QVBoxLayout *dataLayout = new QVBoxLayout(dataWidget);
+        dataLayout->setContentsMargins(20, 20, 20, 20);
+        dataLayout->setSpacing(15);
+        
+        // ADC 原始值
+        QFrame *rawFrame = new QFrame(this);
+        rawFrame->setStyleSheet("background-color: white; border-radius: 8px; padding: 15px;");
+        QVBoxLayout *rawLayout = new QVBoxLayout(rawFrame);
+        QLabel *rawTitle = new QLabel("ADC 原始值", this);
+        rawTitle->setStyleSheet("font-size: 14px; color: #888;");
+        m_adcRawLabel = new QLabel("-- ", this);
+        m_adcRawLabel->setStyleSheet("font-size: 28px; color: #2196F3; font-weight: bold;");
+        rawLayout->addWidget(rawTitle);
+        rawLayout->addWidget(m_adcRawLabel);
+        
+        // 电压值
+        QFrame *voltageFrame = new QFrame(this);
+        voltageFrame->setStyleSheet("background-color: white; border-radius: 8px; padding: 15px;");
+        QVBoxLayout *voltageLayout = new QVBoxLayout(voltageFrame);
+        QLabel *voltageTitle = new QLabel("电压值", this);
+        voltageTitle->setStyleSheet("font-size: 14px; color: #888;");
+        m_adcVoltageLabel = new QLabel("-- V", this);
+        m_adcVoltageLabel->setStyleSheet("font-size: 28px; color: #4CAF50; font-weight: bold;");
+        voltageLayout->addWidget(voltageTitle);
+        voltageLayout->addWidget(m_adcVoltageLabel);
+        
+        // 比例系数
+        QFrame *scaleFrame = new QFrame(this);
+        scaleFrame->setStyleSheet("background-color: white; border-radius: 8px; padding: 15px;");
+        QVBoxLayout *scaleLayout = new QVBoxLayout(scaleFrame);
+        QLabel *scaleTitle = new QLabel("Scale 系数", this);
+        scaleTitle->setStyleSheet("font-size: 14px; color: #888;");
+        m_adcScaleLabel = new QLabel("--", this);
+        m_adcScaleLabel->setStyleSheet("font-size: 24px; color: #FF9800; font-weight: bold;");
+        scaleLayout->addWidget(scaleTitle);
+        scaleLayout->addWidget(m_adcScaleLabel);
+        
+        dataLayout->addWidget(rawFrame);
+        dataLayout->addWidget(voltageFrame);
+        dataLayout->addWidget(scaleFrame);
+        
+        // 提示信息
+        QLabel *infoLabel = new QLabel("数据每500ms更新一次", this);
+        infoLabel->setAlignment(Qt::AlignCenter);
+        infoLabel->setStyleSheet("font-size: 12px; color: #999; margin-top: 10px;");
+        
+        layout->addWidget(dataWidget);
+        layout->addWidget(infoLabel);
+        layout->addStretch();
+        
+        // 创建定时器更新传感器数据
+        m_sensorTimer = new QTimer(this);
+        connect(m_sensorTimer, &QTimer::timeout, this, &AppDialog::updateSensorData);
+        m_sensorTimer->start(500);  // 500ms 更新一次
+        
+        // 立即读取一次数据
+        updateSensorData();
+    }
+}
+
+void AppDialog::updateSensorData()
+{
+    int raw = 0;
+    float scale = 0.0f;
+    float voltage = 0.0f;
+    
+    int ret = readAdcData(raw, scale, voltage);
+    
+    if (ret == 0) {
+        m_adcRawLabel->setText(QString::number(raw));
+        m_adcVoltageLabel->setText(QString::number(voltage, 'f', 3) + " V");
+        m_adcScaleLabel->setText(QString::number(scale, 'f', 6));
+    } else {
+        m_adcRawLabel->setText("读取失败");
+        m_adcVoltageLabel->setText("-- V");
+        m_adcScaleLabel->setText("--");
+    }
+}
+
+int AppDialog::readAdcData(int &raw, float &scale, float &voltage)
+{
+    // 读取 scale 值
+    QString scaleStr = readFileContent("/sys/bus/iio/devices/iio:device0/in_voltage_scale");
+    if (scaleStr.isEmpty()) {
+        qDebug() << "Failed to read ADC scale";
+        return -1;
+    }
+    scale = scaleStr.toFloat();
+    
+    // 读取原始值
+    QString rawStr = readFileContent("/sys/bus/iio/devices/iio:device0/in_voltage1_raw");
+    if (rawStr.isEmpty()) {
+        qDebug() << "Failed to read ADC raw value";
+        return -1;
+    }
+    raw = rawStr.toInt();
+    
+    // 计算实际电压值（mV 转 V）
+    voltage = (scale * raw) / 1000.0f;
+    
+    return 0;
+}
+
+QString AppDialog::readFileContent(const QString &filePath)
+{
+    QFile file(filePath);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        qDebug() << "Cannot open file:" << filePath;
+        return QString();
+    }
+    
+    QTextStream in(&file);
+    QString content = in.readLine().trimmed();
+    file.close();
+    
+    return content;
 }
 
 void AppDialog::createNetworkApp()
