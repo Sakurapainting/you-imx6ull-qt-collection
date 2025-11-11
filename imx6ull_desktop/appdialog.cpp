@@ -17,7 +17,9 @@ AppDialog::AppDialog(const QString &appName, QWidget *parent)
     , m_adcScaleLabel(nullptr)
     , m_sensorStackedWidget(nullptr)
     , m_modeSwitchButton(nullptr)
+    , m_yAxisModeButton(nullptr)
     , m_isChartMode(false)
+    , m_isFixedYAxis(true)  // 默认使用固定Y轴
     , m_chartView(nullptr)
     , m_chart(nullptr)
     , m_series(nullptr)
@@ -273,9 +275,29 @@ void AppDialog::createSensorApp()
         QWidget *chartWidget = new QWidget(this);
         QVBoxLayout *chartLayout = new QVBoxLayout(chartWidget);
         chartLayout->setContentsMargins(5, 5, 5, 5);
-        chartLayout->setSpacing(0);
+        chartLayout->setSpacing(5);
         
         setupSensorChart();
+        
+        // 创建Y轴模式切换按钮
+        m_yAxisModeButton = new QPushButton("Y轴: 固定 (0-4096)", this);
+        m_yAxisModeButton->setFixedHeight(35);
+        m_yAxisModeButton->setStyleSheet(
+            "QPushButton {"
+            "   background-color: #9C27B0;"
+            "   color: white;"
+            "   border: none;"
+            "   border-radius: 5px;"
+            "   font-size: 13px;"
+            "   font-weight: bold;"
+            "}"
+            "QPushButton:pressed {"
+            "   background-color: #7B1FA2;"
+            "}"
+        );
+        connect(m_yAxisModeButton, &QPushButton::clicked, this, &AppDialog::toggleYAxisMode);
+        
+        chartLayout->addWidget(m_yAxisModeButton);
         chartLayout->addWidget(m_chartView);
         
         // 添加到堆叠窗口
@@ -418,18 +440,76 @@ void AppDialog::updateChartData(int rawValue)
         m_axisX->setRange(timeInSeconds - 30, timeInSeconds);
     }
     
-    // 动态调整 Y 轴范围（根据当前数据）
-    if (!m_dataPoints.isEmpty()) {
-        int minVal = 4096, maxVal = 0;
-        for (const QPointF &point : m_dataPoints) {
-            int val = static_cast<int>(point.y());
-            minVal = qMin(minVal, val);
-            maxVal = qMax(maxVal, val);
+    // 根据模式调整 Y 轴范围
+    if (m_isFixedYAxis) {
+        // 固定Y轴模式：始终 0-4096
+        m_axisY->setRange(0, 4096);
+    } else {
+        // 自动Y轴模式：根据当前数据动态调整
+        if (!m_dataPoints.isEmpty()) {
+            int minVal = 4096, maxVal = 0;
+            for (const QPointF &point : m_dataPoints) {
+                int val = static_cast<int>(point.y());
+                minVal = qMin(minVal, val);
+                maxVal = qMax(maxVal, val);
+            }
+            
+            // 添加10%的边距
+            int margin = qMax(100, (maxVal - minVal) / 10);
+            m_axisY->setRange(qMax(0, minVal - margin), qMin(4096, maxVal + margin));
         }
-        
-        // 添加10%的边距
-        int margin = qMax(100, (maxVal - minVal) / 10);
-        m_axisY->setRange(qMax(0, minVal - margin), qMin(4096, maxVal + margin));
+    }
+}
+
+void AppDialog::toggleYAxisMode()
+{
+    m_isFixedYAxis = !m_isFixedYAxis;
+    
+    if (m_isFixedYAxis) {
+        m_yAxisModeButton->setText("Y轴: 固定 (0-4096)");
+        m_yAxisModeButton->setStyleSheet(
+            "QPushButton {"
+            "   background-color: #9C27B0;"
+            "   color: white;"
+            "   border: none;"
+            "   border-radius: 5px;"
+            "   font-size: 13px;"
+            "   font-weight: bold;"
+            "}"
+            "QPushButton:pressed {"
+            "   background-color: #7B1FA2;"
+            "}"
+        );
+        // 立即应用固定范围
+        if (m_axisY) {
+            m_axisY->setRange(0, 4096);
+        }
+    } else {
+        m_yAxisModeButton->setText("Y轴: 自动");
+        m_yAxisModeButton->setStyleSheet(
+            "QPushButton {"
+            "   background-color: #00BCD4;"
+            "   color: white;"
+            "   border: none;"
+            "   border-radius: 5px;"
+            "   font-size: 13px;"
+            "   font-weight: bold;"
+            "}"
+            "QPushButton:pressed {"
+            "   background-color: #0097A7;"
+            "}"
+        );
+        // 立即重新计算范围
+        if (!m_dataPoints.isEmpty() && m_axisY) {
+            int minVal = 4096, maxVal = 0;
+            for (const QPointF &point : m_dataPoints) {
+                int val = static_cast<int>(point.y());
+                minVal = qMin(minVal, val);
+                maxVal = qMax(maxVal, val);
+            }
+            int margin = qMax(100, (maxVal - minVal) / 10);
+            m_axisY->setRange(qMax(0, minVal - margin), qMin(4096, maxVal + margin));
+        }
     }
 }
 

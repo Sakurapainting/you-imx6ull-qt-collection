@@ -25,6 +25,7 @@ public:
 private slots:
     void updateSensorData();
     void switchSensorMode();
+    void toggleYAxisMode();
 
 private:
     void setupUI(const QString &appName);
@@ -60,7 +61,9 @@ private:
     // 传感器模式切换
     QStackedWidget *m_sensorStackedWidget;
     QPushButton *m_modeSwitchButton;
+    QPushButton *m_yAxisModeButton;
     bool m_isChartMode;
+    bool m_isFixedYAxis;
     
     // 图表相关
     QChartView *m_chartView;
