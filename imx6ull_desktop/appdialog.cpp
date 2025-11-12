@@ -736,108 +736,99 @@ void AppDialog::createSettingsApp()
         
         // 当前亮度显示
         int currentLevel = getCurrentBrightness();  // 读取的是档位编号 1-7
+        if (currentLevel < 1 || currentLevel > 7) {
+            currentLevel = 4;  // 默认档位4
+        }
         const int brightnessValues[] = {0, 4, 8, 16, 32, 64, 128, 255};  // 索引0不用，1-7对应档位1-7
-        QString currentBrightnessText = (currentLevel >= 1 && currentLevel <= 7) 
-            ? QString("当前档位: <b>%1</b> (亮度值: %2)").arg(currentLevel).arg(brightnessValues[currentLevel])
-            : QString("当前档位: <b>未知</b>");
+        
+        QString currentBrightnessText = QString("当前档位: <b>%1</b> (亮度值: %2)").arg(currentLevel).arg(brightnessValues[currentLevel]);
         QLabel *currentLabel = new QLabel(currentBrightnessText, this);
         currentLabel->setObjectName("currentBrightnessLabel");
-        currentLabel->setStyleSheet("font-size: 14px; color: #4CAF50;");
+        currentLabel->setStyleSheet("font-size: 16px; color: #4CAF50; font-weight: bold;");
         brightnessLayout->addWidget(currentLabel);
         
-        // 创建按钮组用于选择亮度档位
-        QWidget *buttonWidget = new QWidget(this);
-        QGridLayout *buttonLayout = new QGridLayout(buttonWidget);
-        buttonLayout->setSpacing(10);
+        // 创建滑动条
+        QWidget *sliderWidget = new QWidget(this);
+        QHBoxLayout *sliderLayout = new QHBoxLayout(sliderWidget);
+        sliderLayout->setContentsMargins(10, 20, 10, 20);
+        sliderLayout->setSpacing(15);
         
-        // 7个亮度档位（档位编号 1-7）
-        const QString levelNames[] = {"1", "2", "3", "4", "5", "6", "7\n最亮"};
+        // 最暗标签
+        QLabel *minLabel = new QLabel("暗", this);
+        minLabel->setStyleSheet("font-size: 14px; color: #666;");
+        minLabel->setFixedWidth(30);
         
-        for (int i = 0; i < 7; ++i) {
-            int level = i + 1;  // 档位编号从1开始
-            QPushButton *btn = new QPushButton(levelNames[i], this);
-            btn->setFixedSize(80, 50);
-            btn->setProperty("level", level);  // 存储档位编号 1-7
-            btn->setProperty("brightness", brightnessValues[level]);  // 存储对应亮度值
-            
-            // 如果是当前档位，高亮显示
-            if (level == currentLevel) {
-                btn->setStyleSheet(
-                    "QPushButton {"
-                    "   background-color: #4CAF50;"
-                    "   color: white;"
-                    "   border: none;"
-                    "   border-radius: 5px;"
-                    "   font-size: 14px;"
-                    "   font-weight: bold;"
-                    "}"
-                );
-            } else {
-                btn->setStyleSheet(
-                    "QPushButton {"
-                    "   background-color: #E0E0E0;"
-                    "   color: #333;"
-                    "   border: none;"
-                    "   border-radius: 5px;"
-                    "   font-size: 14px;"
-                    "}"
-                    "QPushButton:pressed {"
-                    "   background-color: #BDBDBD;"
-                    "}"
-                );
+        // 滑动条
+        QSlider *brightnessSlider = new QSlider(Qt::Horizontal, this);
+        brightnessSlider->setMinimum(1);  // 档位1
+        brightnessSlider->setMaximum(7);  // 档位7
+        brightnessSlider->setValue(currentLevel);
+        brightnessSlider->setTickPosition(QSlider::TicksBelow);
+        brightnessSlider->setTickInterval(1);
+        brightnessSlider->setStyleSheet(
+            "QSlider::groove:horizontal {"
+            "   border: 1px solid #bbb;"
+            "   background: white;"
+            "   height: 10px;"
+            "   border-radius: 5px;"
+            "}"
+            "QSlider::handle:horizontal {"
+            "   background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #4CAF50, stop:1 #45a049);"
+            "   border: 1px solid #5c5c5c;"
+            "   width: 30px;"
+            "   margin: -10px 0;"
+            "   border-radius: 15px;"
+            "}"
+            "QSlider::sub-page:horizontal {"
+            "   background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #4CAF50, stop:1 #8BC34A);"
+            "   border-radius: 5px;"
+            "}"
+        );
+        
+        // 最亮标签
+        QLabel *maxLabel = new QLabel("亮", this);
+        maxLabel->setStyleSheet("font-size: 14px; color: #666;");
+        maxLabel->setFixedWidth(30);
+        
+        sliderLayout->addWidget(minLabel);
+        sliderLayout->addWidget(brightnessSlider);
+        sliderLayout->addWidget(maxLabel);
+        
+        brightnessLayout->addWidget(sliderWidget);
+        
+        // 档位刻度显示
+        QWidget *tickWidget = new QWidget(this);
+        QHBoxLayout *tickLayout = new QHBoxLayout(tickWidget);
+        tickLayout->setContentsMargins(40, 0, 40, 0);
+        tickLayout->setSpacing(0);
+        
+        for (int i = 1; i <= 7; ++i) {
+            QLabel *tickLabel = new QLabel(QString::number(i), this);
+            tickLabel->setStyleSheet("font-size: 11px; color: #999;");
+            tickLabel->setAlignment(Qt::AlignCenter);
+            tickLayout->addWidget(tickLabel);
+            if (i < 7) {
+                tickLayout->addStretch();
             }
-            
-            // 连接信号
-            connect(btn, &QPushButton::clicked, this, [this, brightnessValues, level, currentLabel]() {
-                setBrightness(level);  // 传入档位编号 1-7
-                currentLabel->setText(QString("当前档位: <b>%1</b> (亮度值: %2)").arg(level).arg(brightnessValues[level]));
-                
-                // 更新所有按钮的样式
-                QWidget *buttonWidget = qobject_cast<QWidget*>(sender()->parent());
-                if (buttonWidget) {
-                    QList<QPushButton*> buttons = buttonWidget->findChildren<QPushButton*>();
-                    for (QPushButton *b : buttons) {
-                        int btnLevel = b->property("level").toInt();
-                        if (btnLevel == level) {
-                            b->setStyleSheet(
-                                "QPushButton {"
-                                "   background-color: #4CAF50;"
-                                "   color: white;"
-                                "   border: none;"
-                                "   border-radius: 5px;"
-                                "   font-size: 14px;"
-                                "   font-weight: bold;"
-                                "}"
-                            );
-                        } else {
-                            b->setStyleSheet(
-                                "QPushButton {"
-                                "   background-color: #E0E0E0;"
-                                "   color: #333;"
-                                "   border: none;"
-                                "   border-radius: 5px;"
-                                "   font-size: 14px;"
-                                "}"
-                                "QPushButton:pressed {"
-                                "   background-color: #BDBDBD;"
-                                "}"
-                            );
-                        }
-                    }
-                }
-            });
-            
-            // 网格布局：第一行4个，第二行3个
-            buttonLayout->addWidget(btn, i / 4, i % 4);
         }
         
-        brightnessLayout->addWidget(buttonWidget);
+        brightnessLayout->addWidget(tickWidget);
+        
+        // 连接滑动条信号
+        connect(brightnessSlider, &QSlider::valueChanged, this, [this, brightnessValues, currentLabel](int value) {
+            currentLabel->setText(QString("当前档位: <b>%1</b> (亮度值: %2)").arg(value).arg(brightnessValues[value]));
+        });
+        
+        connect(brightnessSlider, &QSlider::sliderReleased, this, [this, brightnessSlider, brightnessValues, currentLabel]() {
+            int level = brightnessSlider->value();
+            setBrightness(level);
+            currentLabel->setText(QString("当前档位: <b>%1</b> (亮度值: %2)").arg(level).arg(brightnessValues[level]));
+        });
         
         // 添加说明
         QLabel *noteLabel = new QLabel(
-            "提示：点击按钮调节屏幕亮度\n"
-            "档位 1-7 对应亮度值 4, 8, 16, 32, 64, 128, 255\n"
-            "档位1为最暗，档位7为最亮",
+            "💡 提示：拖动滑块调节屏幕亮度\n"
+            "档位 1-7 对应亮度值 4, 8, 16, 32, 64, 128, 255",
             this
         );
         noteLabel->setStyleSheet("font-size: 12px; color: #666; padding: 10px;");
