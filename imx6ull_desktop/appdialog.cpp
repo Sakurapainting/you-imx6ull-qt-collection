@@ -730,14 +730,14 @@ void AppDialog::createSettingsApp()
         brightnessLayout->addWidget(titleLabel);
         
         // 亮度档位说明
-        QLabel *infoLabel = new QLabel("共8个亮度档位 (0-7)：0, 4, 8, 16, 32, 64, 128, 255", this);
+        QLabel *infoLabel = new QLabel("共7个亮度档位 (1-7)：4, 8, 16, 32, 64, 128, 255", this);
         infoLabel->setStyleSheet("font-size: 12px; color: #999;");
         brightnessLayout->addWidget(infoLabel);
         
         // 当前亮度显示
-        int currentLevel = getCurrentBrightness();  // 读取的是档位编号 0-7
-        const int brightnessValues[] = {0, 4, 8, 16, 32, 64, 128, 255};
-        QString currentBrightnessText = (currentLevel >= 0 && currentLevel < 8) 
+        int currentLevel = getCurrentBrightness();  // 读取的是档位编号 1-7
+        const int brightnessValues[] = {0, 4, 8, 16, 32, 64, 128, 255};  // 索引0不用，1-7对应档位1-7
+        QString currentBrightnessText = (currentLevel >= 1 && currentLevel <= 7) 
             ? QString("当前档位: <b>%1</b> (亮度值: %2)").arg(currentLevel).arg(brightnessValues[currentLevel])
             : QString("当前档位: <b>未知</b>");
         QLabel *currentLabel = new QLabel(currentBrightnessText, this);
@@ -750,17 +750,18 @@ void AppDialog::createSettingsApp()
         QGridLayout *buttonLayout = new QGridLayout(buttonWidget);
         buttonLayout->setSpacing(10);
         
-        // 8个亮度档位（档位编号 0-7）
-        const QString levelNames[] = {"0\n关", "1", "2", "3", "4", "5", "6", "7\n最亮"};
+        // 7个亮度档位（档位编号 1-7）
+        const QString levelNames[] = {"1", "2", "3", "4", "5", "6", "7\n最亮"};
         
-        for (int i = 0; i < 8; ++i) {
+        for (int i = 0; i < 7; ++i) {
+            int level = i + 1;  // 档位编号从1开始
             QPushButton *btn = new QPushButton(levelNames[i], this);
             btn->setFixedSize(80, 50);
-            btn->setProperty("level", i);  // 存储档位编号
-            btn->setProperty("brightness", brightnessValues[i]);  // 存储对应亮度值
+            btn->setProperty("level", level);  // 存储档位编号 1-7
+            btn->setProperty("brightness", brightnessValues[level]);  // 存储对应亮度值
             
             // 如果是当前档位，高亮显示
-            if (i == currentLevel) {
+            if (level == currentLevel) {
                 btn->setStyleSheet(
                     "QPushButton {"
                     "   background-color: #4CAF50;"
@@ -787,9 +788,9 @@ void AppDialog::createSettingsApp()
             }
             
             // 连接信号
-            connect(btn, &QPushButton::clicked, this, [this, brightnessValues, i, currentLabel]() {
-                setBrightness(i);  // 传入档位编号 0-7
-                currentLabel->setText(QString("当前档位: <b>%1</b> (亮度值: %2)").arg(i).arg(brightnessValues[i]));
+            connect(btn, &QPushButton::clicked, this, [this, brightnessValues, level, currentLabel]() {
+                setBrightness(level);  // 传入档位编号 1-7
+                currentLabel->setText(QString("当前档位: <b>%1</b> (亮度值: %2)").arg(level).arg(brightnessValues[level]));
                 
                 // 更新所有按钮的样式
                 QWidget *buttonWidget = qobject_cast<QWidget*>(sender()->parent());
@@ -797,7 +798,7 @@ void AppDialog::createSettingsApp()
                     QList<QPushButton*> buttons = buttonWidget->findChildren<QPushButton*>();
                     for (QPushButton *b : buttons) {
                         int btnLevel = b->property("level").toInt();
-                        if (btnLevel == i) {
+                        if (btnLevel == level) {
                             b->setStyleSheet(
                                 "QPushButton {"
                                 "   background-color: #4CAF50;"
@@ -826,7 +827,7 @@ void AppDialog::createSettingsApp()
                 }
             });
             
-            // 4x2 网格布局
+            // 网格布局：第一行4个，第二行3个
             buttonLayout->addWidget(btn, i / 4, i % 4);
         }
         
@@ -834,9 +835,9 @@ void AppDialog::createSettingsApp()
         
         // 添加说明
         QLabel *noteLabel = new QLabel(
-            "💡 提示：点击按钮调节屏幕亮度\n"
-            "档位 0-7 对应亮度值 0, 4, 8, 16, 32, 64, 128, 255\n"
-            "档位0为关闭背光，档位7为最亮",
+            "提示：点击按钮调节屏幕亮度\n"
+            "档位 1-7 对应亮度值 4, 8, 16, 32, 64, 128, 255\n"
+            "档位1为最暗，档位7为最亮",
             this
         );
         noteLabel->setStyleSheet("font-size: 12px; color: #666; padding: 10px;");
@@ -879,8 +880,8 @@ int AppDialog::getCurrentBrightness()
     file.close();
     
     bool ok;
-    int level = line.toInt(&ok);  // 读取的是档位编号 0-7
-    if (ok && level >= 0 && level <= 7) {
+    int level = line.toInt(&ok);  // 读取的是档位编号 1-7
+    if (ok && level >= 1 && level <= 7) {
         qDebug() << "Current brightness level:" << level;
         return level;
     }
@@ -899,7 +900,7 @@ bool AppDialog::writeBrightness(int value)
     }
     
     QTextStream out(&file);
-    out << value;  // 写入档位编号 0-7
+    out << value;  // 写入档位编号 1-7
     file.close();
     
     qDebug() << "Brightness level set to:" << value;
@@ -908,8 +909,8 @@ bool AppDialog::writeBrightness(int value)
 
 void AppDialog::setBrightness(int level)
 {
-    // level 是档位编号 0-7
-    if (level < 0 || level > 7) {
+    // level 是档位编号 1-7
+    if (level < 1 || level > 7) {
         qDebug() << "Invalid brightness level:" << level;
         return;
     }
