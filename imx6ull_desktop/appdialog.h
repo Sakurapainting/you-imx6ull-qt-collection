@@ -27,6 +27,7 @@ private slots:
     void updateSensorData();
     void switchSensorMode();
     void toggleYAxisMode();
+    void setBrightness(int level);
 
 private:
     void setupUI(const QString &appName);
@@ -49,6 +50,10 @@ private:
     
     // 网络信息相关
     QString getNetworkInfo();
+    
+    // 系统设置相关
+    int getCurrentBrightness();
+    bool writeBrightness(int value);
 
 private:
     QString m_appName;
