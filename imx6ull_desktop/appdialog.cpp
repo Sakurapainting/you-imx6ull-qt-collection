@@ -765,6 +765,9 @@ void AppDialog::createSettingsApp()
         brightnessSlider->setValue(currentLevel);
         brightnessSlider->setTickPosition(QSlider::TicksBelow);
         brightnessSlider->setTickInterval(1);
+        brightnessSlider->setTracking(true);  // 启用追踪，但我们只在特定信号中更新
+        brightnessSlider->setSingleStep(1);   // 设置单步为1
+        brightnessSlider->setPageStep(1);     // 设置翻页步长为1
         brightnessSlider->setStyleSheet(
             "QSlider::groove:horizontal {"
             "   border: 1px solid #bbb;"
@@ -814,15 +817,34 @@ void AppDialog::createSettingsApp()
         
         brightnessLayout->addWidget(tickWidget);
         
-        // 连接滑动条信号
-        connect(brightnessSlider, &QSlider::valueChanged, this, [this, brightnessValues, currentLabel](int value) {
-            currentLabel->setText(QString("当前档位: <b>%1</b> (亮度值: %2)").arg(value).arg(brightnessValues[value]));
-        });
+        // 保存最后一次实际设置的值，防止重复设置
+        int *lastSetValue = new int(currentLevel);
         
-        connect(brightnessSlider, &QSlider::sliderReleased, this, [this, brightnessSlider, brightnessValues, currentLabel]() {
-            int level = brightnessSlider->value();
-            setBrightness(level);
-            currentLabel->setText(QString("当前档位: <b>%1</b> (亮度值: %2)").arg(level).arg(brightnessValues[level]));
+        // 连接滑动条的 valueChanged 信号
+        // 但使用 QTimer 防抖，避免拖动时频繁写入文件
+        QTimer *debounceTimer = new QTimer(this);
+        debounceTimer->setSingleShot(true);  // 单次触发
+        debounceTimer->setInterval(300);     // 300ms 延迟
+        
+        // valueChanged 信号 - 更新显示
+        connect(brightnessSlider, &QSlider::valueChanged, this, [this, brightnessValues, currentLabel, debounceTimer, brightnessSlider, lastSetValue](int value) {
+            // 立即更新显示
+            currentLabel->setText(QString("当前档位: <b>%1</b> (亮度值: %2)").arg(value).arg(brightnessValues[value]));
+            
+            // 停止之前的定时器（如果在运行）
+            debounceTimer->stop();
+            
+            // 启动防抖定时器
+            // 注意：这里需要用 QTimer::singleShot 或者重新连接
+            debounceTimer->disconnect();  // 断开旧连接
+            connect(debounceTimer, &QTimer::timeout, this, [this, value, lastSetValue]() {
+                // 只有值真正改变时才写入硬件
+                if (value != *lastSetValue) {
+                    setBrightness(value);
+                    *lastSetValue = value;
+                }
+            });
+            debounceTimer->start();
         });
         
         // 添加说明
