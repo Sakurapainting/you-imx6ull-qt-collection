@@ -1,4 +1,5 @@
 #include "appdialog.h"
+#include "musicplayer.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QGridLayout>
@@ -940,7 +941,19 @@ void AppDialog::setBrightness(int level)
 
 void AppDialog::createMediaApp()
 {
-    m_contentLabel->setText("多媒体播放\n\n支持音频和视频播放\n图片浏览");
+    // 隐藏默认的内容标签
+    if (m_contentLabel) {
+        m_contentLabel->hide();
+    }
+    
+    // 创建音乐播放器（完整版，使用图片资源）
+    MusicPlayer *musicPlayer = new MusicPlayer(this);
+    
+    // 获取主布局并添加音乐播放器
+    QVBoxLayout *mainLayout = qobject_cast<QVBoxLayout*>(layout());
+    if (mainLayout) {
+        mainLayout->addWidget(musicPlayer);
+    }
 }
 
 void AppDialog::createFileApp()
