@@ -9,6 +9,7 @@
 #include <QProcess>
 #include <QTimer>
 #include <QVector>
+#include "cdwidget.h"
 
 struct SongInfo {
     QString fileName;
@@ -70,7 +71,7 @@ private:
     
 private:
     // UI组件
-    QLabel *m_cdLabel;
+    CDWidget *m_cdWidget;
     QLabel *m_songTitleLabel;
     QLabel *m_artistLabel;
     QLabel *m_currentTimeLabel;
