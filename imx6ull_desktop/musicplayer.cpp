@@ -124,17 +124,8 @@ void MusicPlayer::setupUI()
     rightLayout->setSpacing(0);
     
     // CD封面
-    m_cdLabel = new QLabel();
-    m_cdLabel->setObjectName("cdLabel");
-    m_cdLabel->setFixedSize(280, 280);
-    m_cdLabel->setAlignment(Qt::AlignCenter);
-    m_cdLabel->setScaledContents(true);
-    
-    // 加载CD图片
-    QPixmap cdPixmap(":/image/cd.png");
-    if (!cdPixmap.isNull()) {
-        m_cdLabel->setPixmap(cdPixmap.scaled(280, 280, Qt::KeepAspectRatio, Qt::SmoothTransformation));
-    }
+    m_cdWidget = new CDWidget();
+    m_cdWidget->setObjectName("cdLabel");
     
     // 歌曲信息
     m_songTitleLabel = new QLabel("未播放");
@@ -241,7 +232,7 @@ void MusicPlayer::setupUI()
     
     // 组装右侧布局
     rightLayout->addSpacing(20);
-    rightLayout->addWidget(m_cdLabel, 0, Qt::AlignHCenter);
+    rightLayout->addWidget(m_cdWidget, 0, Qt::AlignHCenter);
     rightLayout->addSpacing(20);
     rightLayout->addWidget(m_songTitleLabel);
     rightLayout->addSpacing(5);
@@ -574,6 +565,10 @@ void MusicPlayer::playSong(int index)
         m_isPaused = false;
         m_progressTimer->start(500); // 每0.5秒更新一次进度
         updatePlayButton();
+        
+        // 启动CD旋转
+        m_cdWidget->startRotation();
+        
         qDebug() << "Playing:" << song.filePath;
     } else {
         qDebug() << "Failed to start aplay";
@@ -590,6 +585,9 @@ void MusicPlayer::stopPlayback()
     if (m_progressTimer) {
         m_progressTimer->stop();
     }
+    
+    // 停止并重置CD旋转
+    m_cdWidget->resetRotation();
     
     m_playerState = StoppedState;
     m_currentPosition = 0;
@@ -608,6 +606,9 @@ void MusicPlayer::pausePlayback()
         m_playerState = PausedState;
         m_isPaused = true;
         updatePlayButton();
+        
+        // 暂停CD旋转
+        m_cdWidget->stopRotation();
     }
 }
 
@@ -629,6 +630,9 @@ void MusicPlayer::resumePlayback()
             m_isPaused = false;
             m_progressTimer->start(500);
             updatePlayButton();
+            
+            // 恢复CD旋转
+            m_cdWidget->startRotation();
         }
     }
 }

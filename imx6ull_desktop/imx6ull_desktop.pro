@@ -21,14 +21,16 @@ SOURCES += \
     iconwidget.cpp \
     sliderwidget.cpp \
     appdialog.cpp \
-    musicplayer.cpp
+    musicplayer.cpp \
+    cdwidget.cpp
 
 HEADERS += \
     mainwindow.h \
     iconwidget.h \
     sliderwidget.h \
     appdialog.h \
-    musicplayer.h
+    musicplayer.h \
+    cdwidget.h
 
 FORMS += \
     mainwindow.ui
