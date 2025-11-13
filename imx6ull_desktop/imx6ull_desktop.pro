@@ -20,16 +20,21 @@ SOURCES += \
     mainwindow.cpp \
     iconwidget.cpp \
     sliderwidget.cpp \
-    appdialog.cpp
+    appdialog.cpp \
+    musicplayer.cpp
 
 HEADERS += \
     mainwindow.h \
     iconwidget.h \
     sliderwidget.h \
-    appdialog.h
+    appdialog.h \
+    musicplayer.h
 
 FORMS += \
     mainwindow.ui
+
+RESOURCES += \
+    resources.qrc
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
