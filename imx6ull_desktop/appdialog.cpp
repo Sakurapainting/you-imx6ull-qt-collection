@@ -12,6 +12,7 @@
 #include <QScrollArea>
 #include <QSlider>
 #include <QButtonGroup>
+#include <QProcess>
 
 AppDialog::AppDialog(const QString &appName, QWidget *parent)
     : QDialog(parent)
@@ -957,7 +958,207 @@ void AppDialog::createMediaApp()
 
 void AppDialog::createSystemApp()
 {
-    m_contentLabel->setText("系统信息\n\nCPU：NXP i.MX6ULL\n内存：512MB\n存储：8GB eMMC");
+    // 隐藏默认的内容标签
+    if (m_contentLabel) {
+        m_contentLabel->hide();
+    }
+    
+    // 创建主容器
+    QWidget *container = new QWidget(this);
+    QVBoxLayout *mainLayout = qobject_cast<QVBoxLayout*>(layout());
+    if (mainLayout) {
+        mainLayout->addWidget(container);
+    }
+    
+    // 创建布局
+    QVBoxLayout *layout = new QVBoxLayout(container);
+    layout->setContentsMargins(20, 10, 20, 20);
+    layout->setSpacing(15);
+    
+    // 创建滚动区域
+    QScrollArea *scrollArea = new QScrollArea(container);
+    scrollArea->setWidgetResizable(true);
+    scrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    scrollArea->setFrameShape(QFrame::NoFrame);
+    
+    QWidget *scrollWidget = new QWidget();
+    QVBoxLayout *scrollLayout = new QVBoxLayout(scrollWidget);
+    scrollLayout->setContentsMargins(10, 10, 10, 10);
+    scrollLayout->setSpacing(10);
+    
+    // 获取系统信息
+    QString systemInfo = getSystemInfo();
+    
+    // 创建信息标签
+    QLabel *infoLabel = new QLabel(systemInfo, scrollWidget);
+    infoLabel->setWordWrap(true);
+    infoLabel->setAlignment(Qt::AlignLeft | Qt::AlignTop);
+    infoLabel->setStyleSheet("QLabel { font-size: 14px; color: #333333; background-color: #f5f5f5; padding: 15px; border-radius: 5px; }");
+    scrollLayout->addWidget(infoLabel);
+    
+    scrollLayout->addStretch();
+    scrollArea->setWidget(scrollWidget);
+    layout->addWidget(scrollArea);
+    
+    // 添加刷新按钮
+    QPushButton *refreshBtn = new QPushButton("刷新信息", container);
+    refreshBtn->setFixedHeight(50);
+    refreshBtn->setStyleSheet("QPushButton { font-size: 16px; background-color: #4CAF50; color: white; border: none; border-radius: 5px; }"
+                               "QPushButton:pressed { background-color: #45a049; }");
+    connect(refreshBtn, &QPushButton::clicked, [infoLabel, this]() {
+        infoLabel->setText(getSystemInfo());
+    });
+    layout->addWidget(refreshBtn);
+}
+
+QString AppDialog::getSystemInfo()
+{
+    QString info;
+    
+    // 获取主机名
+    QFile hostnameFile("/etc/hostname");
+    if (hostnameFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        QString hostname = QString::fromUtf8(hostnameFile.readAll()).trimmed();
+        info += QString("主机名: %1\n\n").arg(hostname);
+        hostnameFile.close();
+    }
+    
+    // 获取内核版本
+    QFile versionFile("/proc/version");
+    if (versionFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        QString version = QString::fromUtf8(versionFile.readAll()).trimmed();
+        // 提取关键信息
+        QStringList parts = version.split(" ");
+        if (parts.size() > 2) {
+            info += QString("内核版本: %1\n\n").arg(parts[2]);
+        }
+        versionFile.close();
+    }
+    
+    // 获取CPU信息
+    QFile cpuinfoFile("/proc/cpuinfo");
+    if (cpuinfoFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        QString cpuinfo = QString::fromUtf8(cpuinfoFile.readAll());
+        QStringList lines = cpuinfo.split("\n");
+        QString cpuModel;
+        int cpuCores = 0;
+        
+        for (const QString &line : lines) {
+            if (line.startsWith("model name")) {
+                cpuModel = line.split(":").last().trimmed();
+            } else if (line.startsWith("Hardware")) {
+                cpuModel = line.split(":").last().trimmed();
+            } else if (line.startsWith("processor")) {
+                cpuCores++;
+            }
+        }
+        
+        if (!cpuModel.isEmpty()) {
+            info += QString("CPU型号: %1\n").arg(cpuModel);
+        }
+        if (cpuCores > 0) {
+            info += QString("CPU核心数: %1\n\n").arg(cpuCores);
+        }
+        cpuinfoFile.close();
+    }
+    
+    // 获取内存信息
+    QFile meminfoFile("/proc/meminfo");
+    if (meminfoFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        QString meminfo = QString::fromUtf8(meminfoFile.readAll());
+        QStringList lines = meminfo.split("\n");
+        
+        qint64 totalMem = 0;
+        qint64 availableMem = 0;
+        
+        for (const QString &line : lines) {
+            if (line.startsWith("MemTotal:")) {
+                totalMem = line.split(":").last().trimmed().split(" ").first().toLongLong();
+            } else if (line.startsWith("MemAvailable:")) {
+                availableMem = line.split(":").last().trimmed().split(" ").first().toLongLong();
+            }
+        }
+        
+        if (totalMem > 0) {
+            double totalMemMB = totalMem / 1024.0;
+            double usedMemMB = (totalMem - availableMem) / 1024.0;
+            double usagePercent = (usedMemMB / totalMemMB) * 100;
+            
+            info += QString("内存总量: %1 MB\n").arg(QString::number(totalMemMB, 'f', 1));
+            info += QString("已用内存: %1 MB (%2%)\n").arg(QString::number(usedMemMB, 'f', 1)).arg(QString::number(usagePercent, 'f', 1));
+            info += QString("可用内存: %1 MB\n\n").arg(QString::number(availableMem / 1024.0, 'f', 1));
+        }
+        meminfoFile.close();
+    }
+    
+    // 获取存储信息（根分区）
+    QProcess df;
+    df.start("df", QStringList() << "-h" << "/");
+    df.waitForFinished();
+    QString dfOutput = QString::fromUtf8(df.readAllStandardOutput());
+    QStringList dfLines = dfOutput.split("\n");
+    if (dfLines.size() > 1) {
+        QStringList fields = dfLines[1].simplified().split(" ");
+        if (fields.size() >= 5) {
+            info += QString("根分区总容量: %1\n").arg(fields[1]);
+            info += QString("已使用: %1 (%2)\n").arg(fields[2]).arg(fields[4]);
+            info += QString("可用空间: %1\n\n").arg(fields[3]);
+        }
+    }
+    
+    // 获取系统启动时间
+    QFile uptimeFile("/proc/uptime");
+    if (uptimeFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        QString uptime = QString::fromUtf8(uptimeFile.readAll()).split(" ").first();
+        qint64 uptimeSeconds = uptime.toDouble();
+        
+        int days = uptimeSeconds / 86400;
+        int hours = (uptimeSeconds % 86400) / 3600;
+        int minutes = (uptimeSeconds % 3600) / 60;
+        
+        info += QString("系统运行时间: %1天 %2小时 %3分钟\n\n").arg(days).arg(hours).arg(minutes);
+        uptimeFile.close();
+    }
+    
+    // 获取平均负载
+    QFile loadavgFile("/proc/loadavg");
+    if (loadavgFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        QString loadavg = QString::fromUtf8(loadavgFile.readAll()).trimmed();
+        QStringList loads = loadavg.split(" ");
+        if (loads.size() >= 3) {
+            info += QString("系统负载: %1 (1分钟) %2 (5分钟) %3 (15分钟)\n\n").arg(loads[0]).arg(loads[1]).arg(loads[2]);
+        }
+        loadavgFile.close();
+    }
+    
+    // 获取网络接口信息
+    QProcess ifconfig;
+    ifconfig.start("ip", QStringList() << "addr");
+    ifconfig.waitForFinished();
+    QString ifconfigOutput = QString::fromUtf8(ifconfig.readAllStandardOutput());
+    QStringList ifconfigLines = ifconfigOutput.split("\n");
+    
+    info += "网络接口:\n";
+    QString currentInterface;
+    for (const QString &line : ifconfigLines) {
+        if (!line.startsWith(" ") && line.contains(":")) {
+            QStringList parts = line.split(":");
+            if (parts.size() > 0) {
+                currentInterface = parts[1].trimmed().split(" ").first();
+                if (!currentInterface.isEmpty() && currentInterface != "lo") {
+                    info += QString("  %1\n").arg(currentInterface);
+                }
+            }
+        } else if (line.contains("inet ") && !currentInterface.isEmpty() && currentInterface != "lo") {
+            QString trimmed = line.trimmed();
+            QStringList parts = trimmed.split(" ");
+            if (parts.size() > 1) {
+                info += QString("    IP地址: %1\n").arg(parts[1].split("/").first());
+            }
+        }
+    }
+    
+    return info;
 }
 
 void AppDialog::createFaceRecognitionApp()

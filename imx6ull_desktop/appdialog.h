@@ -39,6 +39,9 @@ private:
     void createSystemApp();
     void createFaceRecognitionApp();
     
+    // 系统信息相关
+    QString getSystemInfo();
+    
     // ADC 读取相关
     int readAdcData(int &raw, float &scale, float &voltage);
     QString readFileContent(const QString &filePath);
