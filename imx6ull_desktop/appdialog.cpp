@@ -46,8 +46,6 @@ AppDialog::AppDialog(const QString &appName, QWidget *parent)
         createSettingsApp();
     } else if (appName == "多媒体") {
         createMediaApp();
-    } else if (appName == "文件管理") {
-        createFileApp();
     } else if (appName == "系统信息") {
         createSystemApp();
     } else if (appName == "关于") {
@@ -957,11 +955,6 @@ void AppDialog::createMediaApp()
     if (mainLayout) {
         mainLayout->addWidget(musicPlayer);
     }
-}
-
-void AppDialog::createFileApp()
-{
-    m_contentLabel->setText("文件管理器\n\n浏览系统文件\n文件操作（复制、删除、移动）");
 }
 
 void AppDialog::createSystemApp()

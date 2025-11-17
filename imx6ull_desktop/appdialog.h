@@ -36,7 +36,6 @@ private:
     void createNetworkApp();
     void createSettingsApp();
     void createMediaApp();
-    void createFileApp();
     void createSystemApp();
     void createAboutApp();
     void createFaceRecognitionApp();
