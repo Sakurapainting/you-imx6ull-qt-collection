@@ -48,8 +48,6 @@ AppDialog::AppDialog(const QString &appName, QWidget *parent)
         createMediaApp();
     } else if (appName == "系统信息") {
         createSystemApp();
-    } else if (appName == "关于") {
-        createAboutApp();
     } else if (appName == "人脸识别") {
         createFaceRecognitionApp();
     }
@@ -960,11 +958,6 @@ void AppDialog::createMediaApp()
 void AppDialog::createSystemApp()
 {
     m_contentLabel->setText("系统信息\n\nCPU：NXP i.MX6ULL\n内存：512MB\n存储：8GB eMMC");
-}
-
-void AppDialog::createAboutApp()
-{
-    m_contentLabel->setText("关于\n\nIMX6ULL 综合应用平台\n版本：1.0.0\n\n基于 Qt 开发的嵌入式应用系统");
 }
 
 void AppDialog::createFaceRecognitionApp()
