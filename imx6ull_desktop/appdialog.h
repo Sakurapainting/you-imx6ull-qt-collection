@@ -39,6 +39,7 @@ private:
     void createFileApp();
     void createSystemApp();
     void createAboutApp();
+    void createFaceRecognitionApp();
     
     // ADC 读取相关
     int readAdcData(int &raw, float &scale, float &voltage);

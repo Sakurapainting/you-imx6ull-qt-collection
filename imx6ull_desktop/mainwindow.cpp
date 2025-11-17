@@ -18,7 +18,7 @@ MainWindow::MainWindow(QWidget *parent)
     // 设置窗口属性
     setWindowTitle("IMX6ULL Desktop");
     
-    // 初始化应用列表（8个应用）
+    // 初始化应用列表（9个应用）
     m_apps = {
         {"LED控制", ""},
         {"传感器", ""},
@@ -27,7 +27,8 @@ MainWindow::MainWindow(QWidget *parent)
         {"多媒体", ""},
         {"文件管理", ""},
         {"系统信息", ""},
-        {"关于", ""}
+        {"关于", ""},
+        {"人脸识别", ""}
     };
     
     setupUI();
@@ -87,7 +88,7 @@ void MainWindow::setupUI()
 
 void MainWindow::createPages()
 {
-    // 第一页显示所有8个图标（2行4列）
+    // 第一页显示所有9个图标（3行，前2行4列，第3行1列）
     QWidget *page1 = createPage(0);
     m_sliderWidget->addPage(page1);
     
@@ -111,7 +112,7 @@ QWidget* MainWindow::createPage(int pageIndex)
     gridLayout->setContentsMargins(20, 30, 20, 30);
     gridLayout->setSpacing(15);
     
-    // 第一页显示所有8个图标（2行4列）
+    // 第一页显示所有9个图标（3行，前2行4列，第3行1列）
     int row = 0, col = 0;
     for (int i = 0; i < m_apps.count(); ++i) {
         IconWidget *icon = new IconWidget(m_apps[i].iconPath, m_apps[i].name, page);
@@ -127,7 +128,7 @@ QWidget* MainWindow::createPage(int pageIndex)
     }
     
     // 添加弹性空间
-    gridLayout->setRowStretch(2, 1);
+    gridLayout->setRowStretch(3, 1);
     
     return page;
 }
