@@ -11,6 +11,8 @@
 #include <QMessageBox>
 #include <QDataStream>
 #include <QEvent>
+#include <QHeaderView>
+#include <QDateTime>
 
 #ifdef __arm__
 /* OpenCV 头文件 */
@@ -75,12 +77,30 @@ void FaceRecognition::layoutInit()
     faceDetectButton = new QPushButton();
     registerFaceButton = new QPushButton();
     faceRecognizeButton = new QPushButton();
+    manageDatabaseButton = new QPushButton();
     nameLineEdit = new QLineEdit();
     infoLabel = new QLabel();
     scrollArea = new QScrollArea();
     displayLabel = new QLabel(scrollArea);
     vboxLayout = new QVBoxLayout();
     hboxLayout = new QHBoxLayout();
+
+    /* 创建堆叠窗口 */
+    stackedWidget = new QStackedWidget();
+    
+    /* 创建摄像头视图 */
+    cameraWidget = new QWidget();
+    QVBoxLayout *cameraLayout = new QVBoxLayout(cameraWidget);
+    cameraLayout->setContentsMargins(0, 0, 0, 0);
+    cameraLayout->addWidget(scrollArea);
+    
+    /* 创建数据库管理视图 */
+    createDatabaseManagementUI();
+    
+    /* 添加到堆叠窗口 */
+    stackedWidget->addWidget(cameraWidget);      // 索引0：摄像头视图
+    stackedWidget->addWidget(databaseWidget);    // 索引1：数据库管理视图
+    stackedWidget->setCurrentIndex(0);
 
     /* 设置右侧控制面板布局 */
     vboxLayout->setContentsMargins(10, 10, 10, 10);
@@ -91,6 +111,7 @@ void FaceRecognition::layoutInit()
     vboxLayout->addWidget(nameLineEdit);
     vboxLayout->addWidget(registerFaceButton);
     vboxLayout->addWidget(faceRecognizeButton);
+    vboxLayout->addWidget(manageDatabaseButton);
     vboxLayout->addWidget(infoLabel);
     vboxLayout->addStretch();
 
@@ -99,10 +120,10 @@ void FaceRecognition::layoutInit()
     /* 设置主布局 */
     hboxLayout->setContentsMargins(0, 0, 0, 0);
     hboxLayout->setSpacing(10);
-    hboxLayout->addWidget(scrollArea);
+    hboxLayout->addWidget(stackedWidget);
     hboxLayout->addWidget(rightWidget);
     
-    /* 将主布局设置给 FaceRecognition 本身，而不是 mainWidget */
+    /* 将主布局设置给 FaceRecognition 本身 */
     this->setLayout(hboxLayout);
 
     openCameraButton->setMaximumHeight(40);
@@ -116,6 +137,9 @@ void FaceRecognition::layoutInit()
 
     faceRecognizeButton->setMaximumHeight(40);
     faceRecognizeButton->setMaximumWidth(200);
+    
+    manageDatabaseButton->setMaximumHeight(40);
+    manageDatabaseButton->setMaximumWidth(200);
 
     nameLineEdit->setMaximumHeight(30);
     nameLineEdit->setMaximumWidth(200);
@@ -156,6 +180,9 @@ void FaceRecognition::layoutInit()
     faceRecognizeButton->setText("开启人脸识别");
     faceRecognizeButton->setCheckable(true);
     faceRecognizeButton->setEnabled(false);
+    
+    manageDatabaseButton->setText("数据库管理");
+    manageDatabaseButton->setCheckable(true);
 
     /* 摄像头 */
     camera = new Camera(this);
@@ -171,6 +198,8 @@ void FaceRecognition::layoutInit()
             this, SLOT(registerFaceButtonClicked()));
     connect(faceRecognizeButton, SIGNAL(clicked()),
             this, SLOT(faceRecognizeButtonClicked()));
+    connect(manageDatabaseButton, SIGNAL(clicked()),
+            this, SLOT(manageDatabaseButtonClicked()));
     connect(comboBox, SIGNAL(currentTextChanged(QString)),
             this, SLOT(onCameraDeviceChanged(QString)));
     
@@ -402,6 +431,11 @@ void FaceRecognition::registerFaceButtonClicked()
                           .arg(name).arg(faceDatabase.size()));
         QMessageBox::information(this, "成功", QString("成功录入人脸: %1").arg(name));
         nameLineEdit->clear();
+        
+        /* 如果正在查看数据库管理界面，刷新视图 */
+        if (stackedWidget->currentIndex() == 1) {
+            refreshDatabaseView();
+        }
     } else {
         QMessageBox::warning(this, "失败", "未检测到人脸或特征提取失败！");
     }
@@ -555,6 +589,11 @@ void FaceRecognition::loadFaceDatabase()
     if (!faceDatabase.isEmpty()) {
         infoLabel->setText(QString("数据库人数: %1").arg(faceDatabase.size()));
     }
+    
+    /* 如果数据库管理UI已创建，刷新视图 */
+    if (databaseWidget) {
+        refreshDatabaseView();
+    }
 }
 
 void FaceRecognition::showVirtualKeyboard()
@@ -563,5 +602,170 @@ void FaceRecognition::showVirtualKeyboard()
         /* 确保输入框可编辑 */
         nameLineEdit->setReadOnly(false);
         virtualKeyboard->showKeyboard();
+    }
+}
+
+void FaceRecognition::manageDatabaseButtonClicked()
+{
+    if (manageDatabaseButton->isChecked()) {
+        /* 切换到数据库管理视图 */
+        stackedWidget->setCurrentIndex(1);
+        manageDatabaseButton->setText("返回摄像头");
+        refreshDatabaseView();
+    } else {
+        /* 切换回摄像头视图 */
+        stackedWidget->setCurrentIndex(0);
+        manageDatabaseButton->setText("数据库管理");
+    }
+}
+
+void FaceRecognition::createDatabaseManagementUI()
+{
+    databaseWidget = new QWidget();
+    QVBoxLayout *mainLayout = new QVBoxLayout(databaseWidget);
+    mainLayout->setContentsMargins(10, 10, 10, 10);
+    mainLayout->setSpacing(15);
+    
+    /* 标题 */
+    QLabel *titleLabel = new QLabel("人脸数据库管理", databaseWidget);
+    titleLabel->setStyleSheet("font-size: 18px; font-weight: bold; color: #2196F3;");
+    titleLabel->setAlignment(Qt::AlignCenter);
+    mainLayout->addWidget(titleLabel);
+    
+    /* 数据表格 */
+    QLabel *tableLabel = new QLabel("已录入人员列表", databaseWidget);
+    tableLabel->setStyleSheet("font-size: 14px; font-weight: bold; color: #333;");
+    mainLayout->addWidget(tableLabel);
+    
+    tableWidget = new QTableWidget(databaseWidget);
+    tableWidget->setColumnCount(3);
+    tableWidget->setHorizontalHeaderLabels({"姓名", "特征维度", "操作"});
+    
+    /* 设置表格样式 */
+    tableWidget->horizontalHeader()->setStretchLastSection(false);
+    tableWidget->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
+    tableWidget->horizontalHeader()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
+    tableWidget->horizontalHeader()->setSectionResizeMode(2, QHeaderView::ResizeToContents);
+    tableWidget->verticalHeader()->setVisible(false);
+    tableWidget->setSelectionBehavior(QTableWidget::SelectRows);
+    tableWidget->setEditTriggers(QTableWidget::NoEditTriggers);
+    tableWidget->setAlternatingRowColors(true);
+    tableWidget->setStyleSheet(
+        "QTableWidget {"
+        "   background-color: white;"
+        "   gridline-color: #ddd;"
+        "   border: 1px solid #ccc;"
+        "   border-radius: 5px;"
+        "}"
+        "QTableWidget::item {"
+        "   padding: 5px;"
+        "}"
+        "QHeaderView::section {"
+        "   background-color: #2196F3;"
+        "   color: white;"
+        "   padding: 8px;"
+        "   border: none;"
+        "   font-weight: bold;"
+        "}"
+    );
+    
+    mainLayout->addWidget(tableWidget);
+    
+    /* 统计信息 */
+    QLabel *statsLabel = new QLabel("", databaseWidget);
+    statsLabel->setObjectName("statsLabel");
+    statsLabel->setStyleSheet("font-size: 13px; color: #666; padding: 10px;");
+    statsLabel->setAlignment(Qt::AlignCenter);
+    mainLayout->addWidget(statsLabel);
+}
+
+void FaceRecognition::updateDatabaseTable()
+{
+    if (!tableWidget) return;
+    
+    tableWidget->setRowCount(0);
+    
+    int row = 0;
+    for (auto it = faceDatabase.begin(); it != faceDatabase.end(); ++it) {
+        tableWidget->insertRow(row);
+        
+        /* 姓名 */
+        QTableWidgetItem *nameItem = new QTableWidgetItem(it.key());
+        nameItem->setTextAlignment(Qt::AlignCenter);
+        tableWidget->setItem(row, 0, nameItem);
+        
+        /* 特征维度 */
+        QTableWidgetItem *dimItem = new QTableWidgetItem(QString::number(it.value().size()));
+        dimItem->setTextAlignment(Qt::AlignCenter);
+        tableWidget->setItem(row, 1, dimItem);
+        
+        /* 删除按钮 */
+        QPushButton *deleteBtn = new QPushButton("删除");
+        deleteBtn->setStyleSheet(
+            "QPushButton {"
+            "   background-color: #f44336;"
+            "   color: white;"
+            "   border: none;"
+            "   padding: 5px 15px;"
+            "   border-radius: 3px;"
+            "   font-size: 12px;"
+            "}"
+            "QPushButton:hover {"
+            "   background-color: #d32f2f;"
+            "}"
+            "QPushButton:pressed {"
+            "   background-color: #b71c1c;"
+            "}"
+        );
+        
+        QString name = it.key();
+        connect(deleteBtn, &QPushButton::clicked, this, [this, name]() {
+            deleteFaceData(name);
+        });
+        
+        tableWidget->setCellWidget(row, 2, deleteBtn);
+        row++;
+    }
+}
+
+void FaceRecognition::refreshDatabaseView()
+{
+    updateDatabaseTable();
+    
+    /* 更新统计信息 */
+    QLabel *statsLabel = databaseWidget->findChild<QLabel*>("statsLabel");
+    if (statsLabel) {
+        int totalCount = faceDatabase.size();
+        int totalFeatures = 0;
+        for (auto it = faceDatabase.begin(); it != faceDatabase.end(); ++it) {
+            totalFeatures += it.value().size();
+        }
+        
+        statsLabel->setText(QString("📊 总人数: %1 | 总特征数: %2")
+                           .arg(totalCount)
+                           .arg(totalFeatures));
+    }
+}
+
+void FaceRecognition::deleteFaceData(const QString &name)
+{
+    QMessageBox::StandardButton reply;
+    reply = QMessageBox::question(this, "确认删除", 
+                                  QString("确定要删除 '%1' 的人脸数据吗？").arg(name),
+                                  QMessageBox::Yes | QMessageBox::No);
+    
+    if (reply == QMessageBox::Yes) {
+        faceDatabase.remove(name);
+        saveFaceDatabase();
+        refreshDatabaseView();
+        
+        /* 更新信息标签 */
+        if (faceDatabase.isEmpty()) {
+            infoLabel->setText("数据库已清空");
+        } else {
+            infoLabel->setText(QString("数据库人数: %1").arg(faceDatabase.size()));
+        }
+        
+        QMessageBox::information(this, "成功", QString("已删除 '%1' 的人脸数据").arg(name));
     }
 }
