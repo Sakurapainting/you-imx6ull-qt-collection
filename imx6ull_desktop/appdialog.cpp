@@ -1,5 +1,6 @@
 #include "appdialog.h"
 #include "musicplayer.h"
+#include "facerecognition.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QGridLayout>
@@ -51,6 +52,8 @@ AppDialog::AppDialog(const QString &appName, QWidget *parent)
         createSystemApp();
     } else if (appName == "关于") {
         createAboutApp();
+    } else if (appName == "人脸识别") {
+        createFaceRecognitionApp();
     }
 }
 
@@ -969,4 +972,21 @@ void AppDialog::createSystemApp()
 void AppDialog::createAboutApp()
 {
     m_contentLabel->setText("关于\n\nIMX6ULL 综合应用平台\n版本：1.0.0\n\n基于 Qt 开发的嵌入式应用系统");
+}
+
+void AppDialog::createFaceRecognitionApp()
+{
+    // 隐藏默认的内容标签
+    if (m_contentLabel) {
+        m_contentLabel->hide();
+    }
+    
+    // 创建人脸识别应用
+    FaceRecognition *faceRecognition = new FaceRecognition(this);
+    
+    // 获取主布局并添加人脸识别应用
+    QVBoxLayout *mainLayout = qobject_cast<QVBoxLayout*>(layout());
+    if (mainLayout) {
+        mainLayout->addWidget(faceRecognition);
+    }
 }

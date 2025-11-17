@@ -15,6 +15,39 @@ DEFINES += QT_DEPRECATED_WARNINGS
 # You can also select to disable deprecated APIs only up to a certain version of Qt.
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
+TARGET_ARCH = $${QT_ARCH}
+contains(TARGET_ARCH, arm){
+    # OpenCV 库配置（ARM平台）
+    INCLUDEPATH += /home/you/opencv-3.4.1/install/include
+    LIBS += -L/home/you/opencv-3.4.1/install/lib \
+            -lopencv_core \
+            -lopencv_highgui \
+            -lopencv_imgproc \
+            -lopencv_videoio \
+            -lopencv_imgcodecs \
+            -lopencv_objdetect
+
+    # SeetaFace 库配置
+    INCLUDEPATH += /home/you/SeetaFace2/build-arm/install/usr/local/include
+    LIBS += -L/home/you/SeetaFace2/build-arm/install/usr/local/lib \
+            -lSeetaFaceDetector \
+            -lSeetaFaceLandmarker \
+            -lSeetaFaceRecognizer \
+            -lSeetaNet
+    
+    # 设置运行时库搜索路径（开发板上的库路径）
+    QMAKE_LFLAGS += -Wl,-rpath=/usr/local/lib
+} else {
+    # OpenCV 库配置（PC平台 - 使用系统安装的OpenCV）
+    # 如果使用pkg-config
+    CONFIG += link_pkgconfig
+    PKGCONFIG += opencv4
+    
+    # 或者手动指定路径（根据你的PC上OpenCV安装位置调整）
+    # INCLUDEPATH += /usr/include/opencv4
+    # LIBS += -lopencv_core -lopencv_highgui -lopencv_imgproc -lopencv_videoio -lopencv_imgcodecs
+}
+
 SOURCES += \
     main.cpp \
     mainwindow.cpp \
@@ -22,7 +55,10 @@ SOURCES += \
     sliderwidget.cpp \
     appdialog.cpp \
     musicplayer.cpp \
-    cdwidget.cpp
+    cdwidget.cpp \
+    camera.cpp \
+    virtualkeyboard.cpp \
+    facerecognition.cpp
 
 HEADERS += \
     mainwindow.h \
@@ -30,7 +66,10 @@ HEADERS += \
     sliderwidget.h \
     appdialog.h \
     musicplayer.h \
-    cdwidget.h
+    cdwidget.h \
+    camera.h \
+    virtualkeyboard.h \
+    facerecognition.h
 
 FORMS += \
     mainwindow.ui
