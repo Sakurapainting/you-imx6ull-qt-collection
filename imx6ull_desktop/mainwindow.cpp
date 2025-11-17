@@ -20,13 +20,13 @@ MainWindow::MainWindow(QWidget *parent)
     
     // 初始化应用列表（7个应用）
     m_apps = {
-        {"LED控制", ""},
-        {"传感器", ""},
-        {"网络设置", ""},
-        {"系统设置", ""},
-        {"多媒体", ""},
-        {"系统信息", ""},
-        {"人脸识别", ""}
+        {"LED控制", ":/icon/led_icon.png"},
+        {"传感器", ":/icon/sensor_icon.png"},
+        {"网络设置", ":/icon/net_icon.png"},
+        {"系统设置", ":/icon/system_icon.png"},
+        {"多媒体", ":/icon/multimedia_icon.png"},
+        {"系统信息", ":/icon/info_icon.png"},
+        {"人脸识别", ":/icon/facereco_icon.png"}
     };
     
     setupUI();
