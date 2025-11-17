@@ -68,14 +68,7 @@ FaceRecognition::~FaceRecognition()
 
 void FaceRecognition::layoutInit()
 {
-    /* 获取屏幕的分辨率 */
-    QList <QScreen *> list_screen =  QGuiApplication::screens();
-
-    /* 设置大小 */
-    this->resize(list_screen.at(0)->geometry().width(),
-                 list_screen.at(0)->geometry().height());
-
-    mainWidget = new QWidget(this);
+    /* 创建控件 */
     rightWidget = new QWidget();
     comboBox = new QComboBox();
     openCameraButton = new QPushButton();
@@ -89,6 +82,9 @@ void FaceRecognition::layoutInit()
     vboxLayout = new QVBoxLayout();
     hboxLayout = new QHBoxLayout();
 
+    /* 设置右侧控制面板布局 */
+    vboxLayout->setContentsMargins(10, 10, 10, 10);
+    vboxLayout->setSpacing(10);
     vboxLayout->addWidget(comboBox);
     vboxLayout->addWidget(openCameraButton);
     vboxLayout->addWidget(faceDetectButton);
@@ -100,9 +96,14 @@ void FaceRecognition::layoutInit()
 
     rightWidget->setLayout(vboxLayout);
 
+    /* 设置主布局 */
+    hboxLayout->setContentsMargins(0, 0, 0, 0);
+    hboxLayout->setSpacing(10);
     hboxLayout->addWidget(scrollArea);
     hboxLayout->addWidget(rightWidget);
-    mainWidget->setLayout(hboxLayout);
+    
+    /* 将主布局设置给 FaceRecognition 本身，而不是 mainWidget */
+    this->setLayout(hboxLayout);
 
     openCameraButton->setMaximumHeight(40);
     openCameraButton->setMaximumWidth(200);
@@ -129,18 +130,17 @@ void FaceRecognition::layoutInit()
     comboBox->setMaximumHeight(40);
     comboBox->setMaximumWidth(200);
     
-    scrollArea->setMinimumWidth(this->width() - comboBox->width() - 50);
+    /* 设置滚动区域 */
+    scrollArea->setWidgetResizable(true);
+    scrollArea->setMinimumWidth(400);
 
-    /* 显示图像最大画面 */
-    displayLabel->setMinimumWidth(scrollArea->width() * 0.75);
-    displayLabel->setMinimumHeight(scrollArea->height() * 0.75);
+    /* 显示图像 */
+    displayLabel->setMinimumSize(480, 360);
+    displayLabel->setScaledContents(true);
     scrollArea->setWidget(displayLabel);
 
     /* 居中显示 */
     scrollArea->setAlignment(Qt::AlignCenter);
-
-    /* 自动拉伸 */
-    displayLabel->setScaledContents(true);
 
     /* 设置按钮文本 */
     openCameraButton->setText("开启摄像头");

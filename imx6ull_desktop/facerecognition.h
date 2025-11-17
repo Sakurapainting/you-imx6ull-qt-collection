@@ -61,7 +61,6 @@ private:
 
 private:
     /* UI 组件 */
-    QWidget *mainWidget;
     QWidget *rightWidget;
     QComboBox *comboBox;
     QPushButton *openCameraButton;
