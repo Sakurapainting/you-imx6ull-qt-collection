@@ -37,7 +37,6 @@ private:
     void createSettingsApp();
     void createMediaApp();
     void createSystemApp();
-    void createAboutApp();
     void createFaceRecognitionApp();
     
     // ADC 读取相关

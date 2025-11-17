@@ -18,7 +18,7 @@ MainWindow::MainWindow(QWidget *parent)
     // 设置窗口属性
     setWindowTitle("IMX6ULL Desktop");
     
-    // 初始化应用列表（8个应用）
+    // 初始化应用列表（7个应用）
     m_apps = {
         {"LED控制", ""},
         {"传感器", ""},
@@ -26,7 +26,6 @@ MainWindow::MainWindow(QWidget *parent)
         {"系统设置", ""},
         {"多媒体", ""},
         {"系统信息", ""},
-        {"关于", ""},
         {"人脸识别", ""}
     };
     
