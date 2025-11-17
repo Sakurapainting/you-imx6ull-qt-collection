@@ -12,6 +12,8 @@
 #include <QImage>
 #include <QMap>
 #include <QVector>
+#include <QTableWidget>
+#include <QStackedWidget>
 
 /* 前向声明 */
 class Camera;
@@ -48,6 +50,9 @@ private slots:
     void faceRecognizeButtonClicked();
     void onCameraDeviceChanged(const QString &deviceName);
     void showVirtualKeyboard();
+    void manageDatabaseButtonClicked();
+    void deleteFaceData(const QString &name);
+    void refreshDatabaseView();
 
 private:
     void layoutInit();
@@ -58,6 +63,8 @@ private:
     QString recognizeFace(const QVector<float> &feature);
     void saveFaceDatabase();
     void loadFaceDatabase();
+    void createDatabaseManagementUI();
+    void updateDatabaseTable();
 
 private:
     /* UI 组件 */
@@ -67,12 +74,19 @@ private:
     QPushButton *faceDetectButton;
     QPushButton *registerFaceButton;
     QPushButton *faceRecognizeButton;
+    QPushButton *manageDatabaseButton;
     QLineEdit *nameLineEdit;
     QLabel *infoLabel;
     QScrollArea *scrollArea;
     QLabel *displayLabel;
     QVBoxLayout *vboxLayout;
     QHBoxLayout *hboxLayout;
+    
+    /* 数据库管理UI */
+    QStackedWidget *stackedWidget;
+    QWidget *cameraWidget;
+    QWidget *databaseWidget;
+    QTableWidget *tableWidget;
 
     /* 摄像头 */
     Camera *camera;
