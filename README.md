@@ -10,6 +10,16 @@
 - **开发工具**：自动化部署和同步脚本
 - **版本管理**：Git 工作流和分支管理策略
 
+## 📸 界面预览
+
+### 桌面主界面
+![桌面主界面](./imx6ull_desktop/preview_image/home.jpg)
+
+### 人脸识别功能
+![人脸识别](./imx6ull_desktop/preview_image/facereco.jpg)
+
+> 💡 **更多界面截图**：请查看 [imx6ull_desktop/README.md](./imx6ull_desktop/README.md) 中的完整界面预览
+
 ## 🗂️ 仓库结构
 
 ```
