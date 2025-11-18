@@ -197,7 +197,6 @@ imx6ull_desktop/
 - **Qt 运行时**：5.12.9
 - **OpenCV**：3.4.1
 - **SeetaFace2**：最新版（仅ARM平台）
-- **ntpdate**：网络时间同步工具（可选）
 
 ### 权限要求
 - 需要 root 权限以访问：
