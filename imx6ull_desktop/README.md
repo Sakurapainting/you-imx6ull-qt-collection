@@ -2,6 +2,25 @@
 
 基于 Qt 5.12.9 开发的嵌入式桌面应用系统，专为 NXP i.MX6ULL 平台设计，集成了多种系统控制、传感器监控、多媒体播放和人脸识别等功能。
 
+## 界面预览
+
+### 桌面主界面
+![桌面主界面](./preview_image/home.jpg)
+
+### LED 控制
+![LED控制](./preview_image/led.jpg)
+
+### 传感器监控
+![传感器监控](./preview_image/sensor.jpg)
+
+![传感器详情](./preview_image/sensor2.jpg)
+
+### 系统设置
+![系统设置](./preview_image/sysconfig.jpg)
+
+### 人脸识别
+![人脸识别](./preview_image/facereco.jpg)
+
 ## 项目概述
 
 IMX6ULL Desktop 是一个功能完整的嵌入式图形界面应用程序，提供了类似智能手机的桌面交互体验。项目采用 Qt Widgets 框架开发，支持触摸屏操作，具有良好的用户交互体验和视觉效果。
