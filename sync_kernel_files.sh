@@ -15,4 +15,7 @@ cp "$KERNEL_DIR/zImage" ./zImage
 # 复制 imx6ull.dtsi
 cp "$KERNEL_DIR/dts/imx6ull.dtsi" ./imx6ull.dtsi
 
+# 复制 defconfig 文件
+cp "$KERNEL_DIR/arch/arm/configs/you_imx6ull_defconfig" ./you_imx6ull_defconfig
+
 echo "dts, dtb, zImage, imx6ull.dtsi 已复制到当前目录"
